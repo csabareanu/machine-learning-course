@@ -8,8 +8,8 @@ function [J grad] = nnCostFunction(nn_params, ...
 %   [J grad] = NNCOSTFUNCTON(nn_params, hidden_layer_size, num_labels, ...
 %   X, y, lambda) computes the cost and gradient of the neural network. The
 %   parameters for the neural network are "unrolled" into the vector
-%   nn_params and need to be converted back into the weight matrices. 
-% 
+%   nn_params and need to be converted back into the weight matrices.
+%
 %   The returned parameter grad should be a "unrolled" vector of the
 %   partial derivatives of the neural network.
 %
@@ -24,11 +24,12 @@ Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):en
 
 % Setup some useful variables
 m = size(X, 1);
-         
-% You need to return the following variables correctly 
+
+% You need to return the following variables correctly
 J = 0;
 Theta1_grad = zeros(size(Theta1));
 Theta2_grad = zeros(size(Theta2));
+
 
 % ====================== YOUR CODE HERE ======================
 % Instructions: You should complete the code by working through the
@@ -46,12 +47,12 @@ Theta2_grad = zeros(size(Theta2));
 %         that your implementation is correct by running checkNNGradients
 %
 %         Note: The vector y passed into the function is a vector of labels
-%               containing values from 1..K. You need to map this vector into a 
+%               containing values from 1..K. You need to map this vector into a
 %               binary vector of 1's and 0's to be used with the neural network
 %               cost function.
 %
 %         Hint: We recommend implementing backpropagation using a for-loop
-%               over the training examples if you are implementing it for the 
+%               over the training examples if you are implementing it for the
 %               first time.
 %
 % Part 3: Implement regularization with the cost function and gradients.
@@ -62,8 +63,45 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
+%Part 1 %
+y = [1:num_labels] == y;
 
+%Adding bias unit in Input Layer%
+X = [ones(m, 1) X];
+z2 = Theta1 * X';
+a2 = sigmoid(z2);
 
+%Adding bias unit in Hidden layer%
+a2 = [ones(1, m); a2];
+
+z3 = Theta2 * a2;
+
+%Output Layer. Has dimmension R^n after transpose.%
+h = sigmoid(z3)';
+%Regularized%
+J = -1/m * sum(sum(y .* log(h) + (1 - y) .* log(1-h))) + [lambda / (2 * m)] * [sum(sum(Theta1(:,2:end).^2)) + sum(sum(Theta2(:,2:end).^2))];
+%Unregularized%
+%J = -1/m * sum(sum(y .* log(h) + (1 - y) .* log(1-h)));
+
+for i = 1:m,
+  %Step 1. Forward Propagation and compute activations (a's)%
+  a_1 = X(i,:)';  % X has already a bias unit for all 5000 examples . 401x1%
+  z_2 = Theta1 * a_1;  %25x1%
+  a_2 = [1; sigmoid(z_2)]; %26x1%
+
+  z_3 = Theta2 * a_2;  %10x1%
+  a_3 = sigmoid(z_3);  %10x1%
+  %Step 2. Compute node errors for output layer %
+  delta_3 = a_3 - y(i,:)'; %10x1
+  %Step 3. Compute node errors for hidden layer %
+  delta_2 = (Theta2)' * delta_3 .* sigmoidGradient([1;z_2]);
+  delta_2 = delta_2(2:end); %25*1%
+  %Step 4. Compute the accumulator
+  Theta2_grad = Theta2_grad + delta_3 * a_2';
+  Theta1_grad = Theta1_grad + delta_2 * a_1';
+end;
+Theta1_grad = 1/m .* Theta1_grad + lambda * [zeros(size(Theta1,1), 1) Theta1(:,2:end)] .* 1/m;
+Theta2_grad = 1/m .* Theta2_grad + lambda * [zeros(size(Theta2,1), 1) Theta2(:,2:end)] .* 1/m;
 
 
 
